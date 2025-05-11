@@ -1,31 +1,36 @@
-import os
-import tensorflow as tf
-
 IMG_SIZE = (100, 100)
 BATCH_SIZE = 32
 
-def get_data_generators(train_dir, test_dir):
-    train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+import tensorflow as tf
+
+def load_data(data_dir, target_size=(224, 224), batch_size=32, val_split=0.1):
+    datagen = tf.keras.preprocessing.image.ImageDataGenerator(
         rescale=1./255,
-        rotation_range=30,
+        validation_split=val_split,
+        rotation_range=20,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
         zoom_range=0.2,
-        horizontal_flip=True
+        horizontal_flip=True,
+        fill_mode='nearest'
     )
 
-    test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
-
-    train_generator = train_datagen.flow_from_directory(
-        train_dir,
-        target_size=IMG_SIZE,
-        batch_size=BATCH_SIZE,
-        class_mode='categorical'
+    train_data = datagen.flow_from_directory(
+        data_dir,
+        target_size=target_size,
+        batch_size=batch_size,
+        class_mode='categorical',
+        subset='training',
+        shuffle=True
     )
 
-    test_generator = test_datagen.flow_from_directory(
-        test_dir,
-        target_size=IMG_SIZE,
-        batch_size=BATCH_SIZE,
-        class_mode='categorical'
+    val_data = datagen.flow_from_directory(
+        data_dir,
+        target_size=target_size,
+        batch_size=batch_size,
+        class_mode='categorical',
+        subset='validation',
+        shuffle=False
     )
 
-    return train_generator, test_generator
+    return train_data, val_data

@@ -1,22 +1,28 @@
-import sys
-import numpy as np
 import tensorflow as tf
+import sys
 
-CLASS_NAMES = ['Apple', 'Banana', 'Kiwi', 'Mango', 'Orange', 'Papaya', 'Pineapple', 'Pomegranate', 'Strawberry', 'Watermelon']
+# Load model đã lưu
+model = tf.keras.models.load_model('models/saved_models/model.keras')
 
-def predict_image(image_path, model_path='models/saved_models/model.keras'):
-    model = tf.keras.models.load_model(model_path)
+# Class Indices với tên lớp bằng tiếng Việt
+class_indices = {'Táo': 0, 'Chuối': 1, 'Nho': 2, 'Xoài': 3, 'Dâu tây': 4}
 
-    # Load và xử lý ảnh
-    img = tf.keras.utils.load_img(image_path, target_size=(100, 100))
-    img_array = tf.keras.utils.img_to_array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+def predict_image(filepath, threshold=0.65):
+    image_raw = tf.io.read_file(filepath)
+    image_tensor = tf.image.decode_image(image_raw, channels=3)
+    image_tensor = tf.image.convert_image_dtype(image_tensor, tf.float32)
+    image_resized = tf.image.resize(image_tensor, [224, 224])
+    image_batch = tf.expand_dims(image_resized, axis=0)
+    prediction = model.predict(image_batch)
 
-    # Dự đoán
-    prediction = model.predict(img_array)
-    predicted_class = CLASS_NAMES[np.argmax(prediction)]
-    return predicted_class
+    predicted_index = tf.argmax(prediction[0]).numpy()
+    confidence = tf.reduce_max(prediction[0]).numpy()
 
-if __name__ == '__main__':
-    image_path = sys.argv[1]
-    print("Predicted:", predict_image(image_path))
+    # Kiểm tra xem confidence có đủ cao không
+    if confidence < threshold:
+        print("Mô hình không đủ tự tin để dự đoán. Vui lòng kiểm tra lại ảnh.")
+        return "Không thể dự đoán chính xác. Mô hình cần thêm dữ liệu", confidence  # Thay đổi này
+
+    predicted_class = [k for k, v in class_indices.items() if v == predicted_index][0]
+
+    return f"{predicted_class}", confidence  # Cập nhật này

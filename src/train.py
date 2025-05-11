@@ -1,25 +1,27 @@
-import os
 import tensorflow as tf
-from data_preprocessing import get_data_generators
-from model import create_model
+from model import build_model
+from data_preprocessing import load_data
 
-train_dir = 'data/train'
-test_dir = 'data/test'
-model_path = 'models/saved_models/model.keras'
+def train_model():
+    train_data, val_data = load_data('data/train')
 
-train_gen, test_gen = get_data_generators(train_dir, test_dir)
-model = create_model()
+    model = build_model()
 
-callbacks = [
-    tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=5),
-    tf.keras.callbacks.ModelCheckpoint(model_path, save_best_only=True)
-]
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(patience=5, restore_best_weights=True),
+        tf.keras.callbacks.ReduceLROnPlateau(factor=0.2, patience=3)
+    ]
 
-model.fit(
-    train_gen,
-    epochs=30,
-    validation_data=test_gen,
-    callbacks=callbacks
-)
+    history = model.fit(
+        train_data,
+        validation_data=val_data,
+        epochs=30,
+        callbacks=callbacks
+    )
 
-model.save(model_path)
+    model.save('models/saved_models/model.keras')
+    print("✅ Model saved to models/saved_models/model.keras")
+
+    return history
+if __name__ == "__main__":
+    train_model()

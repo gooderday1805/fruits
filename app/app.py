@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from flask import Flask, render_template, request
 from src.predict import predict_image
 
@@ -13,8 +15,8 @@ def index():
         if file:
             filepath = os.path.join(UPLOAD_FOLDER, file.filename)
             file.save(filepath)
-            prediction = predict_image(filepath)
-            return render_template('result.html', prediction=prediction, image_path=filepath)
+            prediction, confidence = predict_image(filepath)
+            return render_template('result.html', prediction=prediction, confidence=confidence, image_path=filepath)
     return render_template('index.html')
 
 if __name__ == '__main__':
